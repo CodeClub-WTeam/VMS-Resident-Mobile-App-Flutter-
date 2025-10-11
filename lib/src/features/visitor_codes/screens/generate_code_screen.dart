@@ -1,5 +1,3 @@
-// lib/src/features/visitor_codes/screens/generate_code_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +14,6 @@ class GenerateCodeScreen extends StatefulWidget {
 
 class _GenerateCodeScreenState extends State<GenerateCodeScreen> {
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
 
   DateTime selectedDate = DateTime.now();
   TimeOfDay startTime = const TimeOfDay(hour: 10, minute: 0);
@@ -28,7 +25,6 @@ class _GenerateCodeScreenState extends State<GenerateCodeScreen> {
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
@@ -140,15 +136,13 @@ class _GenerateCodeScreenState extends State<GenerateCodeScreen> {
     );
   }
 
-  Widget _optionalTextField({
+  Widget _textField({
     required TextEditingController controller,
     required IconData icon,
     required String label,
-    TextInputType keyboard = TextInputType.text,
   }) {
     return TextField(
       controller: controller,
-      keyboardType: keyboard,
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: Colors.blue),
         labelText: label,
@@ -211,17 +205,10 @@ class _GenerateCodeScreenState extends State<GenerateCodeScreen> {
               onTap: () => _pickTime(start: false),
             ),
             const SizedBox(height: 20),
-            _optionalTextField(
+            _textField(
               controller: _nameController,
               icon: Icons.person_outline,
               label: 'Visitor Name',
-            ),
-            const SizedBox(height: 12),
-            _optionalTextField(
-              controller: _phoneController,
-              icon: Icons.phone_outlined,
-              label: 'Visitor Phone (Optional)',
-              keyboard: TextInputType.phone,
             ),
             const SizedBox(height: 16),
             const Text(

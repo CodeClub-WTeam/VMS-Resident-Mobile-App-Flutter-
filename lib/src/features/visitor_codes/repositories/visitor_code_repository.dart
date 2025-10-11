@@ -31,7 +31,7 @@ class VisitorCodeRepository {
       );
 
       if (response.statusCode == 201 && response.data != null) {
-        return response.data['data'] ?? {};
+        return response.data;
       } else {
         throw Exception('Failed to generate visitor code');
       }

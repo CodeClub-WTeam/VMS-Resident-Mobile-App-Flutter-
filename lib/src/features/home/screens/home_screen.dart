@@ -9,16 +9,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-final resident = authProvider.resident;
-if (resident == null) {
-  Future.delayed(const Duration(milliseconds: 500), () {
-  });
-  return const Scaffold(
-    body: Center(child: CircularProgressIndicator()),
-  );
-}
+    final resident = authProvider.resident;
 
-    // 🧩 Loading or null state
     if (resident == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -32,7 +24,10 @@ if (resident == null) {
         backgroundColor: Colors.white,
         title: Text(
           "Welcome, ${resident.firstName}",
-          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         centerTitle: false,
       ),
@@ -41,12 +36,12 @@ if (resident == null) {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+            children: <Widget>[
               // 👋 Greeting
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Flexible(
+                  Expanded(
                     child: Text(
                       "Glad to have you back, ${resident.firstName}!",
                       style: const TextStyle(
@@ -54,12 +49,15 @@ if (resident == null) {
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 10),
                   CircleAvatar(
                     radius: 25,
                     backgroundColor: Colors.blue.shade100,
-                    child: Icon(Icons.person, color: Colors.blue.shade800, size: 28),
+                    child:
+                        Icon(Icons.person, color: Colors.blue.shade800, size: 28),
                   ),
                 ],
               ),
@@ -77,37 +75,81 @@ if (resident == null) {
               ),
               const SizedBox(height: 12),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _ActionButton(
-                    icon: Icons.qr_code_2,
-                    label: "Generate Code",
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const GenerateCodeScreen()),
-                      );
-                    },
-                  ),
-                  _ActionButton(
-                    icon: Icons.history,
-                    label: "My History",
-                    onTap: () {}, // TODO: Add history screen
-                  ),
-                  _ActionButton(
-                    icon: Icons.settings,
-                    label: "Settings",
-                    onTap: () {}, // TODO: Add settings screen
-                  ),
-                ],
+              // ✅ Make Row Responsive
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth < 360) {
+                    // For small devices, wrap actions
+                    return Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      spacing: 16,
+                      runSpacing: 16,
+                      children: [
+                        _ActionButton(
+                          icon: Icons.qr_code_2,
+                          label: "Generate Code",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const GenerateCodeScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _ActionButton(
+                          icon: Icons.history,
+                          label: "My History",
+                          onTap: () {},
+                        ),
+                        _ActionButton(
+                          icon: Icons.settings,
+                          label: "Settings",
+                          onTap: () {},
+                        ),
+                      ],
+                    );
+                  } else {
+                    // For normal or wide screens
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _ActionButton(
+                          icon: Icons.qr_code_2,
+                          label: "Generate Code",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const GenerateCodeScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                        _ActionButton(
+                          icon: Icons.history,
+                          label: "My History",
+                          onTap: () {},
+                        ),
+                        _ActionButton(
+                          icon: Icons.settings,
+                          label: "Settings",
+                          onTap: () {},
+                        ),
+                      ],
+                    );
+                  }
+                },
               ),
 
               const SizedBox(height: 30),
 
               // 🏠 Resident Details Card
               Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape:
+                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 elevation: 2,
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -124,9 +166,10 @@ if (resident == null) {
                       ),
                       const SizedBox(height: 12),
                       _InfoRow(label: "Email", value: resident.email),
-                      _InfoRow(label: "Phone", value: resident.phone ?? 'N/A'),
-                      _InfoRow(label: "Home ID", value: resident.homeId ?? 'N/A'),
-                      _InfoRow(label: "Status", value: resident.status ?? 'N/A'),
+                      _InfoRow(
+                          label: "Phone", value: resident.phone ?? 'N/A'),
+                      _InfoRow(
+                          label: "Status", value: resident.status ?? 'N/A'),
                     ],
                   ),
                 ),
@@ -156,6 +199,7 @@ class _ActionButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             height: 65,
@@ -188,10 +232,24 @@ class _InfoRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[700], fontSize: 14)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+          // Label takes minimal space
+          Text(
+            "$label:",
+            style: TextStyle(color: Colors.grey[700], fontSize: 14),
+          ),
+          const SizedBox(width: 8),
+          // Value wraps or ellipsizes safely
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+              overflow: TextOverflow.visible,
+              maxLines: null, // allows wrapping for long strings
+              softWrap: true,
+            ),
+          ),
         ],
       ),
     );
