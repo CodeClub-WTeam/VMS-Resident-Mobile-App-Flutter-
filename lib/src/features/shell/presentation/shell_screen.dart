@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:vms_resident_app/src/features/home/screens/home_screen.dart';
 import 'package:vms_resident_app/src/features/visitor_codes/screens/generate_code_screen.dart';
+
+import 'package:vms_resident_app/src/features/visitor_codes/screens/history_screen.dart';
 import 'package:vms_resident_app/src/widgets/bottom_nav_bar.dart';
 
 class ShellScreen extends StatefulWidget {
@@ -19,8 +21,8 @@ class _ShellScreenState extends State<ShellScreen> {
   static const List<Widget> _widgetOptions = <Widget>[
     HomeScreen(),
     GenerateCodeScreen(),
-    Text('History Screen'), // Placeholder
-    Text('Profile Screen'), // Placeholder
+    VisitHistoryScreen(),
+    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder        Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), //        Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder
   ];
 
   void _onItemTapped(int index) {

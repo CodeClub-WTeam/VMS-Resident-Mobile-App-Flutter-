@@ -12,7 +12,7 @@ class CodeProvider extends ChangeNotifier {
   Map<String, dynamic>? _generatedCodeData;
   Map<String, dynamic>? get generatedCodeData => _generatedCodeData;
 
-  /// ✅ Generate a visitor code
+  /// Generate a visitor code
   Future<void> generateCode({
     required String visitorName,
     required String visitDate,

@@ -6,6 +6,46 @@ class VisitorCodeRepository {
 
   VisitorCodeRepository(this._apiClient);
 
+  // ===================================
+  // 1. VISIT HISTORY METHOD (Used by HistoryProvider)
+  // ===================================
+
+  /// Get the resident's visit history
+  Future<List<dynamic>> getVisitHistory({
+    String? fromDate,
+    String? toDate,
+    int? limit, 
+    int? offset,
+  }) async {
+    try {
+      final response = await _apiClient.dio.get(
+        '/codes/my-history',
+        queryParameters: {
+          'from_date': fromDate,
+          'to_date': toDate,
+          'limit': limit,
+          'offset': offset,
+        },
+      );
+
+      if (response.statusCode == 200 && response.data != null) {
+        return response.data is List
+            ? response.data
+            : (response.data['data'] as List? ?? []);
+      } else {
+        throw Exception('Failed to fetch visit history');
+      }
+    } on DioException catch (e) {
+      throw Exception(
+        'Error fetching history: ${e.response?.data ?? e.message}',
+      );
+    }
+  }
+
+  // ===================================
+  // 2. CODE MANAGEMENT METHODS (Used by CodeProvider)
+  // ===================================
+  
   /// ✅ Generate a new visitor access code
   Future<Map<String, dynamic>> generateCode(
     String visitDate,

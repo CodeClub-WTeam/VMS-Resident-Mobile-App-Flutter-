@@ -6,12 +6,14 @@ import 'package:vms_resident_app/src/features/auth/repositories/auth_repository.
 import 'package:vms_resident_app/src/features/auth/presentation/pages/login_page.dart';
 import 'package:vms_resident_app/src/features/shell/presentation/shell_screen.dart';
 import 'package:vms_resident_app/src/features/visitor_codes/providers/code_provider.dart';
+import 'package:vms_resident_app/src/features/visitor_codes/providers/visit_history_provider.dart'; // ✅ ADDED: Import the missing provider
 import 'package:vms_resident_app/src/features/visitor_codes/repositories/visitor_code_repository.dart';
 
 void main() {
   final apiClient = ApiClient();
   final authRepository = AuthRepository(apiClient);
-  final codeRepository = VisitorCodeRepository(apiClient);
+  // Reusing the same VisitorCodeRepository instance for both CodeProvider and HistoryProvider
+  final codeRepository = VisitorCodeRepository(apiClient); 
 
   runApp(
     MultiProvider(
@@ -21,6 +23,10 @@ void main() {
         ),
         ChangeNotifierProvider(
           create: (_) => CodeProvider(codeRepository),
+        ),
+        // ✅ ADDED: HistoryProvider to the list of available providers
+        ChangeNotifierProvider<HistoryProvider>( 
+          create: (_) => HistoryProvider(codeRepository),
         ),
       ],
       child: const MyApp(),
