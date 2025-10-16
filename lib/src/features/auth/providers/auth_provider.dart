@@ -1,3 +1,5 @@
+// lib/src/features/auth/providers/auth_provider.dart
+
 import 'package:flutter/material.dart';
 import 'package:vms_resident_app/src/features/auth/models/resident_model.dart';
 import 'package:vms_resident_app/src/features/auth/repositories/auth_repository.dart';
@@ -29,7 +31,10 @@ class AuthProvider with ChangeNotifier {
       _isLoggedIn = true;
     } catch (e) {
       _isLoggedIn = false;
-      _errorMessage = e.toString();
+      // ⭐️ FIX: Correctly assign error message from caught exception
+      _errorMessage = e.toString().contains('Exception:') 
+                      ? e.toString().substring(e.toString().indexOf(':') + 1).trim()
+                      : e.toString();
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -45,13 +50,36 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      await _authRepository.logout(); // Optional backend logout
+      await _authRepository.logout(); 
       _resident = null;
       _isLoggedIn = false;
     } catch (e) {
       debugPrint('Logout API failed: $e');
       _resident = null;
       _isLoggedIn = false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ==========================
+  // Forgot Password
+  // ==========================
+  Future<bool> requestPasswordReset(String email) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await _authRepository.forgotPassword(email);
+      return true;
+    } catch (e) {
+      // ⭐️ FIX: Correctly assign error message from caught exception
+      _errorMessage = e.toString().contains('Exception:') 
+                      ? e.toString().substring(e.toString().indexOf(':') + 1).trim()
+                      : e.toString();
+      return false;
     } finally {
       _isLoading = false;
       notifyListeners();

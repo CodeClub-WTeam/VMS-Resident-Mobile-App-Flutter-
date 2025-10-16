@@ -3,10 +3,51 @@ import 'package:provider/provider.dart';
 import 'package:vms_resident_app/src/features/auth/providers/auth_provider.dart';
 import 'package:vms_resident_app/src/features/auth/presentation/pages/login_page.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   static const routeName = '/profile';
 
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Local state for settings that change in the UI
+  bool _notificationsEnabled = true; 
+  String _selectedLanguage = 'English'; 
+
+  // Helper to safely get the primary color
+  Color get _primaryColor => Theme.of(context).primaryColor;
+
+  // FIX: Removed BuildContext context argument. 
+  // Now using State.context property, which is implicitly guarded by 'mounted'.
+  void _handleLogout() async {
+    // Use the State's context property to read the provider before the async gap.
+    // This is generally accepted as long as the state is only read, not used for navigation/UI.
+    final authProvider = context.read<AuthProvider>();
+    
+    // Perform the async operation
+    await authProvider.logout();
+
+    // Guard the UI/Navigation use with 'mounted' check
+    if (!mounted) return;
+
+    // Use the State's context property for navigation after the check
+    if (!authProvider.isLoggedIn) {
+      Navigator.of(context).pushNamedAndRemoveUntil(
+          LoginPage.routeName, (Route<dynamic> route) => false);
+    }
+  }
+
+  // Handles the 'Edit' button action (Implemented placeholder logic)
+  void _handleEditAction(String field, BuildContext context) {
+    debugPrint('📝 Edit action triggered for: $field');
+    // Placeholder logic: Show a simple Snackbar confirmation.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Tapped Edit for $field. Implementation pending.')),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +58,6 @@ class ProfileScreen extends StatelessWidget {
     final String userEmail = resident?.email ?? 'No email';
     final String userRole = resident?.role ?? 'Resident';
     final String? profileImage = resident?.profilePicture;
-    const bool notificationsEnabled = true; // Replace if you add a real field
 
     return Scaffold(
       appBar: AppBar(
@@ -37,6 +77,7 @@ class ProfileScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // User Profile Header
             Padding(
               padding: const EdgeInsets.all(24.0),
               child: Row(
@@ -73,39 +114,63 @@ class ProfileScreen extends StatelessWidget {
                 ],
               ),
             ),
+            
             _buildSectionHeader(context, 'Account Settings'),
+            
+            // Username Setting Tile
             _buildSettingTile(
               title: 'Username:',
               value: userName,
               context: context,
+              onEditPressed: () => _handleEditAction('Username', context),
               showDivider: true,
             ),
+            
+            // Password Setting Tile
             _buildSettingTile(
               title: 'Password:',
               value: '••••••••',
               context: context,
+              onEditPressed: () => _handleEditAction('Password', context),
               showDivider: true,
             ),
+            
+            // Notifications Toggle
             _buildToggleSetting(
               title: 'Notifications',
-              value: notificationsEnabled,
+              value: _notificationsEnabled, 
               onChanged: (bool newValue) {
-                // TODO: Implement toggle logic
+                setState(() {
+                  _notificationsEnabled = newValue;
+                });
               },
               showDivider: true,
             ),
+            
+            // Language Setting
             _buildLanguageSetting(
               title: 'Language',
-              value: 'English',
+              value: _selectedLanguage, 
               context: context,
+              onChanged: (String? newValue) {
+                if (newValue != null && newValue != _selectedLanguage) {
+                  setState(() {
+                    _selectedLanguage = newValue;
+                  });
+                }
+              },
             ),
+            
             const SizedBox(height: 30),
+            
+            // Logout Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => _handleLogout(context),
+                  // FIX: Removed the 'context' argument from the call
+                  onPressed: () => _handleLogout(), 
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
@@ -126,18 +191,10 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  void _handleLogout(BuildContext context) async {
-    final authProvider = context.read<AuthProvider>();
-    await authProvider.logout();
-    if (!authProvider.isLoggedIn) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-          LoginPage.routeName, (Route<dynamic> route) => false);
-    }
-  }
-
   // -------------------------
   // Helper Widgets
   // -------------------------
+  
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
       padding:
@@ -149,17 +206,19 @@ class ProfileScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Theme.of(context).primaryColor,
+            color: _primaryColor,
           ),
         ),
       ),
     );
   }
 
+  // Helper widget for editable tiles
   Widget _buildSettingTile({
     required String title,
     required String value,
     required BuildContext context,
+    required VoidCallback onEditPressed,
     bool showDivider = false,
   }) {
     return Column(
@@ -178,9 +237,7 @@ class ProfileScreen extends StatelessWidget {
                           fontSize: 16, fontWeight: FontWeight.w500)),
                   const SizedBox(width: 10),
                   ElevatedButton(
-                    onPressed: () {
-                      // TODO: Implement Edit/change functionality
-                    },
+                    onPressed: onEditPressed,
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(60, 30),
                       padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -203,6 +260,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // Helper widget for a toggle setting 
   Widget _buildToggleSetting({
     required String title,
     required bool value,
@@ -221,7 +279,8 @@ class ProfileScreen extends StatelessWidget {
               Switch(
                 value: value,
                 onChanged: onChanged,
-                activeColor: Colors.blue,
+                activeThumbColor: Colors.blue, 
+                activeTrackColor: Colors.blue.shade200, 
               ),
             ],
           ),
@@ -232,10 +291,12 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // Helper widget for the language dropdown
   Widget _buildLanguageSetting({
     required String title,
     required String value,
     required BuildContext context,
+    required ValueChanged<String?> onChanged,
   }) {
     return Padding(
       padding:
@@ -261,9 +322,7 @@ class ProfileScreen extends StatelessWidget {
                           child: Text(val, style: const TextStyle(fontSize: 16)),
                         ))
                     .toList(),
-                onChanged: (newValue) {
-                  // TODO: Implement language change logic
-                },
+                onChanged: onChanged,
               ),
             ),
           ),

@@ -72,10 +72,11 @@ class _GenerateCodeScreenState extends State<GenerateCodeScreen> {
 
     try {
       await provider.generateCode(
-        visitorName: _nameController.text.trim(),
-        visitDate: DateFormat('yyyy-MM-dd').format(selectedDate),
-        startTime: _formatTimeForApi(startTime),
-        endTime: _formatTimeForApi(endTime),
+  context: context, // 👈 added
+  visitorName: _nameController.text.trim(),
+  visitDate: DateFormat('yyyy-MM-dd').format(selectedDate),
+  startTime: _formatTimeForApi(startTime),
+  endTime: _formatTimeForApi(endTime),
       );
 
       if (!mounted) return;

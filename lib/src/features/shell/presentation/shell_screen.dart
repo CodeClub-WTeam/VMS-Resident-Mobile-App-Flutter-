@@ -22,7 +22,7 @@ class _ShellScreenState extends State<ShellScreen> {
     HomeScreen(),
     GenerateCodeScreen(),
     VisitHistoryScreen(),
-    ProfileScreen(), // Placeholder    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder        Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), //        Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder    Text('Profile Screen'), // Placeholder
+    ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {

@@ -1,9 +1,12 @@
+// ignore_for_file: unused_element_parameter
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:vms_resident_app/src/features/visitor_codes/providers/visit_history_provider.dart'; // Import the new provider
+import 'package:vms_resident_app/src/features/visitor_codes/providers/visit_history_provider.dart';
+import 'package:vms_resident_app/src/features/visitor_codes/repositories/visitor_code_repository.dart';
+import 'package:vms_resident_app/src/core/navigation/route_observer.dart';
 
-// Define the filter options
 const List<String> _filters = ['This Week', 'This Month', 'Last 3 Months'];
 
 class VisitHistoryScreen extends StatefulWidget {
@@ -13,16 +16,49 @@ class VisitHistoryScreen extends StatefulWidget {
   State<VisitHistoryScreen> createState() => _VisitHistoryScreenState();
 }
 
-class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
+class _VisitHistoryScreenState extends State<VisitHistoryScreen> with RouteAware {
   String _selectedFilter = 'This Month';
-  
+  double _opacity = 1.0;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+final route = ModalRoute.of(context);
+if (route is PageRoute) {
+  routeObserver.subscribe(this, route);
+}
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
-    // Ensures the initial data is fetched based on the default filter
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<HistoryProvider>(context, listen: false).setFilter(_selectedFilter);
     });
+  }
+
+  // 🔁 Automatically refresh when returning from another page
+  @override
+  void didPopNext() {
+    _refreshHistory();
+  }
+
+  Future<void> _refreshHistory() async {
+    final provider = Provider.of<HistoryProvider>(context, listen: false);
+    await provider.setFilter(_selectedFilter);
+    if (!mounted) return;
+
+    setState(() => _opacity = 0.0);
+    await Future.delayed(const Duration(milliseconds: 100));
+    if (mounted) {
+      setState(() => _opacity = 1.0);
+    }
   }
 
   @override
@@ -33,7 +69,6 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
         centerTitle: true,
         elevation: 0,
         actions: const [
-          // Placeholder for the filter icon from the design
           Padding(
             padding: EdgeInsets.only(right: 16.0),
             child: Icon(Icons.sort, color: Colors.blue),
@@ -42,10 +77,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
       ),
       body: Column(
         children: [
-          // Filter Tabs
           _buildFilterTabs(),
-          
-          // History List
           Expanded(
             child: Consumer<HistoryProvider>(
               builder: (context, provider, child) {
@@ -61,13 +93,24 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
                   return const Center(child: Text('No visit history found.'));
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  itemCount: provider.historyList.length,
-                  itemBuilder: (context, index) {
-                    final log = provider.historyList[index];
-                    return _HistoryLogTile(log: log);
-                  },
+                return RefreshIndicator(
+                  onRefresh: () async => _refreshHistory(),
+                  child: AnimatedOpacity(
+                    opacity: _opacity,
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOut,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: provider.historyList.length,
+                      itemBuilder: (context, index) {
+                        final log = provider.historyList[index];
+                        return _HistoryLogTile(
+                          log: log,
+                          onDeleted: () => _refreshHistory(),
+                        );
+                      },
+                    ),
+                  ),
                 );
               },
             ),
@@ -88,9 +131,7 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: InkWell(
                 onTap: () {
-                  setState(() {
-                    _selectedFilter = filter;
-                  });
+                  setState(() => _selectedFilter = filter);
                   Provider.of<HistoryProvider>(context, listen: false).setFilter(filter);
                 },
                 child: Container(
@@ -119,94 +160,195 @@ class _VisitHistoryScreenState extends State<VisitHistoryScreen> {
   }
 }
 
-// ... (VisitHistoryScreen and _buildFilterTabs remain unchanged)
+class _HistoryLogTile extends StatefulWidget {
+  final dynamic log;
+  final VoidCallback onDeleted;
 
-class _HistoryLogTile extends StatelessWidget {
- final dynamic log; // Map<String, dynamic> representing an EntryLog
+  const _HistoryLogTile({
+    required this.log,
+    required this.onDeleted,
+    super.key,
+  });
 
- const _HistoryLogTile({required this.log});
+  @override
+  State<_HistoryLogTile> createState() => _HistoryLogTileState();
+}
 
- @override
- Widget build(BuildContext context) {
-    // Keys observed in the debug output: code, visitor_name, validated_at, result, gate
-    
-  final String visitorName = log['visitor_name'] ?? 'Unnamed Visitor';
-    // The access code key is 'code' in the API response, not 'access_code'
-  final String accessCode = log['code'] ?? 'XXXXX'; // ✅ FIX 1: Use 'code' instead of 'access_code'
-  final String status = log['result'] ?? 'Pending'; // ✅ FIX 2: Use 'result' instead of 'status'
-    
-    // Check for 'validated_at' as the entry timestamp
-  final DateTime? entryTime = log['validated_at'] != null 
-    ? DateTime.tryParse(log['validated_at'])?.toLocal() // ✅ FIX 3: Use 'validated_at' instead of 'entry_time'
-    : null;
+class _HistoryLogTileState extends State<_HistoryLogTile>
+    with SingleTickerProviderStateMixin {
+  bool _isDeleting = false;
 
-  Color statusColor;
-  String statusText;
+  @override
+  Widget build(BuildContext context) {
+    final log = widget.log;
+    final String visitorName = log['visitor_name'] ?? 'Unnamed Visitor';
+    final String accessCode = log['code'] ?? 'N/A';
+    final String status = log['status'] ?? 'pending';
+    final String? visitDateStr = log['visit_date'];
 
-  if (status == 'granted') { // Status value is lowercase 'granted'
-   statusColor = Colors.green;
-   statusText = 'Granted ${entryTime != null ? DateFormat('HH:mm a').format(entryTime) : ''}';
-  } else if (status == 'denied') { // Status value would likely be lowercase 'denied'
-   statusColor = Colors.red;
-   statusText = 'Denied';
-  } else {
-   statusColor = Colors.orange;
-   statusText = 'Pending';
-  }
-  
-  final String dateDisplay = entryTime != null 
-    ? DateFormat('MMM d, yyyy').format(entryTime) 
-    : 'Unknown Date';
+    DateTime? visitDate = DateTime.tryParse(visitDateStr ?? '');
+    final String formattedDate = visitDate != null
+        ? DateFormat('EEE, MMM d, yyyy').format(visitDate)
+        : 'Unknown Date';
 
-  return Container(
-   padding: const EdgeInsets.symmetric(vertical: 12),
-   decoration: BoxDecoration(
-    border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-   ),
-   child: Row(
+    Color statusColor;
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'granted':
+        statusColor = Colors.green;
+        break;
+      case 'expired':
+      case 'cancelled':
+      case 'denied':
+        statusColor = Colors.red;
+        break;
+      default:
+        statusColor = Colors.orange;
+    }
+
+    return AnimatedOpacity(
+      opacity: _isDeleting ? 0.0 : 1.0,
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeInOut,
+      onEnd: () {
+        if (_isDeleting) widget.onDeleted();
+      },
+      child: AnimatedSlide(
+        offset: _isDeleting ? const Offset(1, 0) : Offset.zero,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        child: Card(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          elevation: 1.5,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: statusColor.withValues(alpha: 0.2),
+              child: Icon(Icons.person, color: statusColor),
+            ),
+            title: Text(
+              visitorName,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    formattedDate,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        'Status: ',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                      Text(
+                        status.toUpperCase(),
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            trailing: SizedBox(
+  width: 70,
+  child: Column(
+    mainAxisAlignment: MainAxisAlignment.center,
+    crossAxisAlignment: CrossAxisAlignment.end,
     children: [
-     // Status Indicator
-     CircleAvatar(
-      radius: 4,
-      backgroundColor: statusColor,
-     ),
-     const SizedBox(width: 12),
-
-     // Visitor Info
-     Expanded(
-      child: Column(
-       crossAxisAlignment: CrossAxisAlignment.start,
-       children: [
-        Text(
-         visitorName,
-         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-        ),
-        const SizedBox(height: 4),
-        Text(
-         '$dateDisplay at ${entryTime != null ? DateFormat('h:mm a').format(entryTime) : 'N/A'}',
-         style: TextStyle(color: Colors.grey[600], fontSize: 13),
-        ),
-        if (status != 'granted') // Check the lowercase status
-         Text(
-          statusText,
-          style: TextStyle(color: statusColor, fontSize: 13),
-         ),
-       ],
-      ),
-     ),
-     
-     // Code and Chevron
-     Row(
-      children: [
-       Text(
+      Text(
         accessCode,
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-       ),
-       const Icon(Icons.chevron_right, color: Colors.grey),
-      ],
-     ),
+        textAlign: TextAlign.right,
+        style: const TextStyle(
+          color: Colors.blue,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
+      ),
+      if (status.toLowerCase() == 'pending')
+        IconButton(
+          icon: const Icon(Icons.delete, color: Colors.redAccent),
+          tooltip: 'Delete code',
+          onPressed: () => _confirmDelete(codeId: log['id']),
+        ),
     ],
-   ),
-  );
- }
+  ),
+),
+
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete({required String? codeId}) {
+    if (codeId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Code ID not available')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete Visitor Code'),
+        content: const Text('Are you sure you want to delete this visitor code?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              try {
+                final repo = Provider.of<VisitorCodeRepository>(
+                  context,
+                  listen: false,
+                );
+
+                await repo.cancelVisitorCode(codeId);
+
+                if (!mounted) return;
+                setState(() => _isDeleting = true);
+
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Visitor code deleted')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to delete: $e')),
+                );
+              }
+            },
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

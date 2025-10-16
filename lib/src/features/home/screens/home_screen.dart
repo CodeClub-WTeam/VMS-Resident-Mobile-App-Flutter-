@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:vms_resident_app/src/features/auth/providers/auth_provider.dart';
 import 'package:vms_resident_app/src/features/visitor_codes/screens/generate_code_screen.dart';
+import 'package:vms_resident_app/src/features/auth/presentation/pages/profile_screen.dart';
+import 'package:vms_resident_app/src/features/visitor_codes/screens/history_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -53,12 +55,23 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: Colors.blue.shade100,
-                    child:
-                        Icon(Icons.person, color: Colors.blue.shade800, size: 28),
-                  ),
+
+                GestureDetector(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfileScreen(),
+      ),
+    );
+  },
+  child: CircleAvatar(
+    radius: 25,
+    backgroundColor: Colors.blue.shade100,
+    child: Icon(Icons.person, color: Colors.blue.shade800, size: 28),
+  ),
+),
+
                 ],
               ),
 
@@ -101,13 +114,17 @@ class HomeScreen extends StatelessWidget {
                         _ActionButton(
                           icon: Icons.history,
                           label: "My History",
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const VisitHistoryScreen(),
+                              ),
+                            );
+                          },
                         ),
-                        _ActionButton(
-                          icon: Icons.settings,
-                          label: "Settings",
-                          onTap: () {},
-                        ),
+                        
                       ],
                     );
                   } else {
@@ -131,13 +148,17 @@ class HomeScreen extends StatelessWidget {
                         _ActionButton(
                           icon: Icons.history,
                           label: "My History",
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const VisitHistoryScreen(),
+                              ),
+                            );
+                          },
                         ),
-                        _ActionButton(
-                          icon: Icons.settings,
-                          label: "Settings",
-                          onTap: () {},
-                        ),
+                        
                       ],
                     );
                   }
@@ -146,34 +167,7 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // 🏠 Resident Details Card
-              Card(
-                shape:
-                    RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "My Details",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _InfoRow(label: "Email", value: resident.email),
-                      _InfoRow(
-                          label: "Phone", value: resident.phone ?? 'N/A'),
-                      _InfoRow(
-                          label: "Status", value: resident.status ?? 'N/A'),
-                    ],
-                  ),
-                ),
-              ),
+            
             ],
           ),
         ),
@@ -208,47 +202,12 @@ class _ActionButton extends StatelessWidget {
               color: Colors.blue.shade50,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(icon, color: Colors.blue.shade700, size: 30),
+            child: Icon(icon, color: Colors.blue.shade700, size: 50),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 15),
           Text(
             label,
             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Label takes minimal space
-          Text(
-            "$label:",
-            style: TextStyle(color: Colors.grey[700], fontSize: 14),
-          ),
-          const SizedBox(width: 8),
-          // Value wraps or ellipsizes safely
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600),
-              overflow: TextOverflow.visible,
-              maxLines: null, // allows wrapping for long strings
-              softWrap: true,
-            ),
           ),
         ],
       ),
