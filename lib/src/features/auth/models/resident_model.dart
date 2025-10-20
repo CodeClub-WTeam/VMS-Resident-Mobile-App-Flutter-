@@ -40,6 +40,35 @@ class Resident {
 
   // ✅ Computed property for full name
   String get fullName => '$firstName $lastName';
+
+  // ✅ Production-safe copyWith method
+  Resident copyWith({
+    String? id,
+    String? firstName,
+    String? lastName,
+    String? email,
+    String? phone,
+    String? homeId,
+    String? profilePicture,
+    String? role,
+    String? status,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Resident(
+      id: id ?? this.id,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      homeId: homeId ?? this.homeId,
+      profilePicture: profilePicture ?? this.profilePicture,
+      role: role ?? this.role,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }
 
 String? _homeIdFromJson(Map<String, dynamic>? json) {

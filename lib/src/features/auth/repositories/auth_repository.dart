@@ -58,4 +58,26 @@ class AuthRepository {
       throw ErrorHandler.handle(e);
     } */
   }
+  Future<Resident> updateResidentProfile(
+    String residentId,
+    Map<String, dynamic> updatedData,
+  ) async {
+    try {
+      // ✅ Send PUT or PATCH request to update resident data on backend
+      final response = await _apiClient.dio.put(
+        '/residents/$residentId',
+        data: updatedData,
+      );
+
+      // ✅ Parse the updated user data from backend response
+      final updatedUser = response.data['data'];
+      return Resident.fromJson(updatedUser);
+    } on DioException catch (e) {
+      throw ErrorHandler.handle(e);
+    } catch (e) {
+      throw Exception('Failed to update profile: $e');
+    }
+  }
+
+
 }

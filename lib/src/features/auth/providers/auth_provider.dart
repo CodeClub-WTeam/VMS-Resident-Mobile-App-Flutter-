@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:vms_resident_app/src/features/auth/models/resident_model.dart';
 import 'package:vms_resident_app/src/features/auth/repositories/auth_repository.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 
 class AuthProvider with ChangeNotifier {
   final AuthRepository _authRepository;
@@ -40,6 +42,19 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
+// ==========================
+// Token Getter (Production Safe)
+// ==========================
+Future<String?> get token async {
+  try {
+    return await _secureStorage.read(key: 'jwt_token');
+  } catch (e) {
+    debugPrint('Error reading token: $e');
+    return null;
+  }
+}
 
   // ==========================
   // Logout
@@ -85,4 +100,46 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+// ==========================
+// Update Resident Profile (Sync Frontend + Backend)
+// ==========================
+Future<void> updateResidentProfile(Map<String, dynamic> updatedData) async {
+  if (_resident == null) return;
+
+  _isLoading = true;
+  _errorMessage = null;
+  notifyListeners();
+
+  try {
+    // 🔹 Update on backend first
+    final updatedResident = await _authRepository.updateResidentProfile(
+      _resident!.id,
+      updatedData,
+    );
+
+    // 🔹 Then update locally (use real fields, not fullName)
+    _resident = _resident!.copyWith(
+      firstName: updatedResident.firstName,
+      lastName: updatedResident.lastName,
+      profilePicture: updatedResident.profilePicture ??
+          updatedData['profile_picture'] ??
+          _resident!.profilePicture,
+      phone: updatedResident.phone ??
+          updatedData['phone'] ??
+          _resident!.phone,
+    );
+
+    notifyListeners();
+  } catch (e) {
+    debugPrint('Profile update failed: $e');
+    _errorMessage = e.toString().contains('Exception:')
+        ? e.toString().substring(e.toString().indexOf(':') + 1).trim()
+        : e.toString();
+  } finally {
+    _isLoading = false;
+    notifyListeners();
+  }
+}
+
+
 }

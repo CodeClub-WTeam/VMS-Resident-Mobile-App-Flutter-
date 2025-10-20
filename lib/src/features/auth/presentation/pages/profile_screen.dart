@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
 import 'package:vms_resident_app/src/features/auth/providers/auth_provider.dart';
 import 'package:vms_resident_app/src/features/auth/presentation/pages/login_page.dart';
+import 'dart:convert';
 
 class ProfileScreen extends StatefulWidget {
   static const routeName = '/profile';
@@ -13,39 +17,107 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Local state for settings that change in the UI
-  bool _notificationsEnabled = true; 
-  String _selectedLanguage = 'English'; 
+  final ImagePicker _picker = ImagePicker();
+  late TextEditingController _nameController;
+  File? _imageFile;
+  bool _isSaving = false;
 
-  // Helper to safely get the primary color
-  Color get _primaryColor => Theme.of(context).primaryColor;
 
-  // FIX: Removed BuildContext context argument. 
-  // Now using State.context property, which is implicitly guarded by 'mounted'.
-  void _handleLogout() async {
-    // Use the State's context property to read the provider before the async gap.
-    // This is generally accepted as long as the state is only read, not used for navigation/UI.
+  @override
+  void initState() {
+    super.initState();
     final authProvider = context.read<AuthProvider>();
-    
-    // Perform the async operation
-    await authProvider.logout();
+    final resident = authProvider.resident;
+    _nameController = TextEditingController(text: resident?.fullName ?? '');
+  }
 
-    // Guard the UI/Navigation use with 'mounted' check
-    if (!mounted) return;
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
 
-    // Use the State's context property for navigation after the check
-    if (!authProvider.isLoggedIn) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-          LoginPage.routeName, (Route<dynamic> route) => false);
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() {
+        _imageFile = File(picked.path);
+      });
     }
   }
 
-  // Handles the 'Edit' button action (Implemented placeholder logic)
-  void _handleEditAction(String field, BuildContext context) {
-    debugPrint('📝 Edit action triggered for: $field');
-    // Placeholder logic: Show a simple Snackbar confirmation.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tapped Edit for $field. Implementation pending.')),
+  Future<void> _updateProfile() async {
+    final authProvider = context.read<AuthProvider>();
+    final resident = authProvider.resident;
+   final token = await authProvider.token;
+
+if (resident == null || token == null) return;
+
+
+    final url = Uri.parse('https://your-api-base-url.com/codes/profile');
+
+    setState(() => _isSaving = true);
+
+    try {
+      var request = http.MultipartRequest('PUT', url);
+      request.headers['Authorization'] = 'Bearer $token';
+
+      // Split full name into first/last names
+      final parts = _nameController.text.trim().split(' ');
+      final firstName = parts.isNotEmpty ? parts.first : '';
+      final lastName =
+          parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+      request.fields['first_name'] = firstName;
+      request.fields['last_name'] = lastName;
+      request.fields['phone'] = resident.phone ?? '';
+
+      if (_imageFile != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'profile_picture',
+          _imageFile!.path,
+        ));
+      }
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        final updatedData = jsonDecode(responseBody);
+
+        // Update AuthProvider to refresh resident data
+        authProvider.updateResidentProfile(updatedData);
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Profile updated successfully!')),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+                '❌ Update failed (${response.statusCode}): ${response.reasonPhrase}'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('⚠️ Error updating profile: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final authProvider = context.read<AuthProvider>();
+    await authProvider.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      LoginPage.routeName,
+      (route) => false,
     );
   }
 
@@ -53,280 +125,136 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
     final resident = authProvider.resident;
-
-    final String userName = resident?.fullName ?? 'Loading...';
+    final String? profileImage = _imageFile != null
+        ? _imageFile!.path
+        : resident?.profilePicture;
     final String userEmail = resident?.email ?? 'No email';
     final String userRole = resident?.role ?? 'Resident';
-    final String? profileImage = resident?.profilePicture;
 
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text('EstateGuard'),
-        centerTitle: false,
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Text('My Profile',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-        ],
+        title: const Text('My Profile'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context),
+        ),
         backgroundColor: Colors.blue,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            // User Profile Header
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Row(
+            const SizedBox(height: 20),
+
+            // Profile Picture Section
+            GestureDetector(
+              onTap: _pickImage,
+              child: Stack(
                 children: [
                   CircleAvatar(
-                    radius: 30,
-                    backgroundImage: profileImage != null
-                        ? NetworkImage(profileImage)
-                        : null,
-                    backgroundColor: Colors.grey,
-                    child: profileImage == null
-                        ? const Icon(Icons.person, size: 40, color: Colors.white)
-                        : null,
+                    radius: 50,
+                    backgroundImage: _imageFile != null
+                        ? FileImage(_imageFile!)
+                        : (profileImage != null
+                            ? NetworkImage(profileImage)
+                            : const AssetImage(
+                                    'assets/default_avatar.png')
+                                as ImageProvider),
                   ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        userName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
                       ),
-                      Text(
-                        userEmail,
-                        style: TextStyle(color: Colors.grey[600]),
+                      padding: const EdgeInsets.all(6),
+                      child: const Icon(
+                        Icons.edit,
+                        color: Colors.white,
+                        size: 18,
                       ),
-                      Text(
-                        'Role: $userRole',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
             ),
-            
-            _buildSectionHeader(context, 'Account Settings'),
-            
-            // Username Setting Tile
-            _buildSettingTile(
-              title: 'Username:',
-              value: userName,
-              context: context,
-              onEditPressed: () => _handleEditAction('Username', context),
-              showDivider: true,
+
+            const SizedBox(height: 20),
+
+            // Editable Name Field
+            TextField(
+              controller: _nameController,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                hintText: 'Enter your full name',
+              ),
             ),
-            
-            // Password Setting Tile
-            _buildSettingTile(
-              title: 'Password:',
-              value: '••••••••',
-              context: context,
-              onEditPressed: () => _handleEditAction('Password', context),
-              showDivider: true,
-            ),
-            
-            // Notifications Toggle
-            _buildToggleSetting(
-              title: 'Notifications',
-              value: _notificationsEnabled, 
-              onChanged: (bool newValue) {
-                setState(() {
-                  _notificationsEnabled = newValue;
-                });
-              },
-              showDivider: true,
-            ),
-            
-            // Language Setting
-            _buildLanguageSetting(
-              title: 'Language',
-              value: _selectedLanguage, 
-              context: context,
-              onChanged: (String? newValue) {
-                if (newValue != null && newValue != _selectedLanguage) {
-                  setState(() {
-                    _selectedLanguage = newValue;
-                  });
-                }
-              },
-            ),
-            
+
+            Text(userEmail, style: TextStyle(color: Colors.grey[600])),
+            Text('Role: $userRole', style: TextStyle(color: Colors.grey[600])),
+
             const SizedBox(height: 30),
-            
-            // Logout Button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  // FIX: Removed the 'context' argument from the call
-                  onPressed: () => _handleLogout(), 
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Logout',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+
+            // Save Changes Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isSaving ? null : _updateProfile,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: _isSaving
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.save),
+                label: Text(
+                  _isSaving ? 'Saving...' : 'Save Changes',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
-            const SizedBox(height: 50),
+
+            const SizedBox(height: 10),
+
+            // Logout Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _handleLogout,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.logout),
+                label: const Text(
+                  'Logout',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  // -------------------------
-  // Helper Widgets
-  // -------------------------
-  
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding:
-          const EdgeInsets.only(top: 16.0, left: 24.0, right: 24.0, bottom: 8.0),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Text(
-          title,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: _primaryColor,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Helper widget for editable tiles
-  Widget _buildSettingTile({
-    required String title,
-    required String value,
-    required BuildContext context,
-    required VoidCallback onEditPressed,
-    bool showDivider = false,
-  }) {
-    return Column(
-      children: [
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 16)),
-              Row(
-                children: [
-                  Text(value,
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w500)),
-                  const SizedBox(width: 10),
-                  ElevatedButton(
-                    onPressed: onEditPressed,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(60, 30),
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      backgroundColor: Colors.blue.shade50,
-                      foregroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                      elevation: 0,
-                    ),
-                    child: const Text('Edit', style: TextStyle(fontSize: 14)),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        if (showDivider)
-          const Divider(height: 1, indent: 24, endIndent: 24),
-      ],
-    );
-  }
-
-  // Helper widget for a toggle setting 
-  Widget _buildToggleSetting({
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    bool showDivider = false,
-  }) {
-    return Column(
-      children: [
-        Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 24.0, vertical: 0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(title, style: const TextStyle(fontSize: 16)),
-              Switch(
-                value: value,
-                onChanged: onChanged,
-                activeThumbColor: Colors.blue, 
-                activeTrackColor: Colors.blue.shade200, 
-              ),
-            ],
-          ),
-        ),
-        if (showDivider)
-          const Divider(height: 1, indent: 24, endIndent: 24),
-      ],
-    );
-  }
-
-  // Helper widget for the language dropdown
-  Widget _buildLanguageSetting({
-    required String title,
-    required String value,
-    required BuildContext context,
-    required ValueChanged<String?> onChanged,
-  }) {
-    return Padding(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16)),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: value,
-                icon: const Icon(Icons.arrow_drop_down),
-                items: <String>['English', 'Spanish', 'French']
-                    .map((val) => DropdownMenuItem<String>(
-                          value: val,
-                          child: Text(val, style: const TextStyle(fontSize: 16)),
-                        ))
-                    .toList(),
-                onChanged: onChanged,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
