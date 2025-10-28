@@ -87,7 +87,7 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
       await Share.shareXFiles(
         [XFile(imagePath)],
         text: messageText,
-        subject: 'Your EstateGuard Visitor Pass',
+        subject: 'WOEZOR SMART SECURITY Visitor Pass',
       );
 
       // Clean up the temporary file (optional but good practice)
@@ -157,7 +157,7 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const Text(
-                      'Maple Grove Estate',
+                      'WOEZOR SMART SECURITY',
                       style: TextStyle(
                           fontSize: 18, // Slightly larger
                           color: Colors.blue,

@@ -15,159 +15,123 @@ class HomeScreen extends StatelessWidget {
 
     if (resident == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        backgroundColor: Colors.black,
+        body: Center(
+          child: CircularProgressIndicator(color: Colors.amber),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: Colors.black,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.black,
         title: Text(
           "Welcome, ${resident.firstName}",
           style: const TextStyle(
-            color: Colors.black87,
+            color: Colors.amber,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-        centerTitle: false,
+        actions: [
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 16),
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.amberAccent, width: 2),
+              ),
+              child: const CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.black,
+                child: Icon(Icons.person, color: Colors.amber, size: 26),
+              ),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              // 👋 Greeting
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Glad to have you back, ${resident.firstName}!",
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-
-                GestureDetector(
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ProfileScreen(),
-      ),
-    );
-  },
-  child: CircleAvatar(
-    radius: 25,
-    backgroundColor: Colors.blue.shade100,
-    child: Icon(Icons.person, color: Colors.blue.shade800, size: 28),
-  ),
-),
-
-                ],
+            children: [
+              // 🏠 Greeting section
+              Text(
+                "Glad to have you back, ${resident.firstName}! 👋",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Manage your visitors and view your history easily below.",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade400,
+                ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 35),
 
               // ⚡ Quick Actions
-              Text(
+              const Text(
                 "Quick Actions",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[800],
+                  color: Colors.amber,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 18),
 
-              // ✅ Make Row Responsive
+              // 🎯 Animated Quick Actions
               LayoutBuilder(
                 builder: (context, constraints) {
-                  if (constraints.maxWidth < 360) {
-                    // For small devices, wrap actions
-                    return Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      spacing: 16,
-                      runSpacing: 16,
-                      children: [
-                        _ActionButton(
-                          icon: Icons.qr_code_2,
-                          label: "Generate Code",
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const GenerateCodeScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _ActionButton(
-                          icon: Icons.history,
-                          label: "My History",
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const VisitHistoryScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        
-                      ],
-                    );
-                  } else {
-                    // For normal or wide screens
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _ActionButton(
-                          icon: Icons.qr_code_2,
-                          label: "Generate Code",
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const GenerateCodeScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _ActionButton(
-                          icon: Icons.history,
-                          label: "My History",
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const VisitHistoryScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        
-                      ],
-                    );
-                  }
+                  return Wrap(
+                    spacing: 18,
+                    runSpacing: 18,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _ModernActionCard(
+                        icon: Icons.qr_code_2_rounded,
+                        label: "Generate Code",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const GenerateCodeScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _ModernActionCard(
+                        icon: Icons.history_rounded,
+                        label: "My History",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const VisitHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
                 },
               ),
-
-              const SizedBox(height: 30),
-
-            
             ],
           ),
         ),
@@ -176,40 +140,72 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// 🎨 Reusable Components
-class _ActionButton extends StatelessWidget {
+// 🌟 Modernized Action Button
+class _ModernActionCard extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _ActionButton({
+  const _ModernActionCard({
     required this.icon,
     required this.label,
     required this.onTap,
   });
 
   @override
+  State<_ModernActionCard> createState() => _ModernActionCardState();
+}
+
+class _ModernActionCardState extends State<_ModernActionCard>
+    with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            height: 65,
-            width: 65,
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: Colors.blue.shade700, size: 50),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+      decoration: BoxDecoration(
+        color: _isHovered ? Colors.amber.shade700 : Colors.amber.shade400,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: _isHovered
+            ? [
+                BoxShadow(
+color: Colors.amber.withValues(alpha: 0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ]
+            : [],
+      ),
+      child: InkWell(
+        onTap: widget.onTap,
+        onHover: (hovering) => setState(() => _isHovered = hovering),
+        borderRadius: BorderRadius.circular(18),
+        child: Container(
+          height: 130,
+          width: 140,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                widget.icon,
+                color: Colors.black,
+                size: 45,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 15),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
+        ),
       ),
     );
   }
