@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:intl/intl.dart';
@@ -6,7 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Added Font Awesome for better UX
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // added font awesome for better ux
+
 
 class VisitorPassScreen extends StatefulWidget {
   final Map<String, dynamic> codeData;
@@ -16,9 +18,10 @@ class VisitorPassScreen extends StatefulWidget {
   State<VisitorPassScreen> createState() => _VisitorPassScreenState();
 }
 
+
 class _VisitorPassScreenState extends State<VisitorPassScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
-  
+
   // State variables populated in initState to avoid recalculation in build
   late String _formattedDate;
   late String _visitorName;
@@ -26,6 +29,10 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
   late String _endTime;
   late String _accessCode;
   late String _passDataForQr;
+
+  // Define Gold color for the theme
+  static const Color _goldColor = Color(0xFFFFD700); // Standard Gold color
+  static const Color _darkGoldColor = Color(0xFFDAA520); // Darker Gold for accents
 
   @override
   void initState() {
@@ -39,6 +46,7 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
         widget.codeData['access_code'] ?? widget.codeData['code'] ?? 'N/A';
     _passDataForQr = 'EG|$_accessCode';
 
+
     // 2. Perform date formatting outside of the build method
     try {
       _formattedDate =
@@ -50,10 +58,12 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
     }
   }
 
+
   /// Handles taking a screenshot and sharing the pass details and image.
   Future<void> _sharePass(String platform) async {
     // 1. Take a screenshot
-    final image = await _screenshotController.capture(delay: const Duration(milliseconds: 10)); // Added delay for stability
+    final image = await _screenshotController.capture(
+        delay: const Duration(milliseconds: 10)); // Added delay for stability
     if (image == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -62,15 +72,18 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
       return;
     }
 
+
     // 2. Save screenshot to a temporary directory
     final directory = await getTemporaryDirectory();
     final imagePath = '${directory.path}/visitor_pass.png';
     final file = File(imagePath);
     await file.writeAsBytes(image);
 
+
     // 3. Construct sharing message
     final messageText =
         'Visitor Pass for $_visitorName\nCode: $_accessCode\nDate: $_formattedDate\nTime: $_startTime - $_endTime\nUse this pass at the estate gate.';
+
 
     try {
       // Handle Copy Link separately
@@ -83,15 +96,18 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
         return;
       }
 
-      // Share with Share Plus (for WhatsApp, Email, etc.)
+
+      // Share with share_plus (for WhatsApp, Email, etc.)
       await Share.shareXFiles(
         [XFile(imagePath)],
         text: messageText,
-        subject: 'WOEZOR SMART SECURITY Visitor Pass',
+        subject: 'Woezor Smart Security Visitor Pass',
       );
 
+
       // Clean up the temporary file (optional but good practice)
-      // await file.delete(); 
+      // await file.delete();
+
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -102,10 +118,13 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
       if (!mounted) return;
       // Provide user-friendly feedback on failure
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to share pass. Check permissions or try another app.')),
+        const SnackBar(
+            content: Text(
+                'Failed to share pass. Check permissions or try another app.')),
       );
     }
   }
+
 
   /// Builds a clickable sharing button column.
   Widget _buildShareButton(
@@ -120,26 +139,30 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300, width: 1.5),
+              border: Border.all(color: Colors.grey.shade800, width: 1.5), // Darker border
+              color: Colors.black, // Background of the circle button
             ),
             // Using FaIcon for Font Awesome icons
             child: FaIcon(icon, color: color, size: 24),
           ),
         ),
         const SizedBox(height: 5),
-        Text(platform, style: const TextStyle(fontSize: 12)),
+        Text(platform, style: const TextStyle(fontSize: 12, color: _goldColor)), // Gold text
       ],
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black, // Overall black background
       appBar: AppBar(
-        title: const Text('Visitor Pass'),
+        title: const Text('Visitor Pass', style: TextStyle(color: _goldColor)), // Gold title
         centerTitle: true,
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.black, // Black app bar
+        foregroundColor: _goldColor, // Gold foreground elements
+        elevation: 0, // Remove shadow
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -147,9 +170,10 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
           child: Screenshot(
             controller: _screenshotController,
             child: Card(
+              color: Colors.grey[900], // Dark grey card background
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
-              elevation: 8, // Increased elevation for a nicer look
+              elevation: 10, // Increased elevation for a nicer look
               margin: const EdgeInsets.only(bottom: 20),
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -159,8 +183,8 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
                     const Text(
                       'WOEZOR SMART SECURITY',
                       style: TextStyle(
-                          fontSize: 18, // Slightly larger
-                          color: Colors.blue,
+                          fontSize: 18,
+                          color: _goldColor, // Gold color
                           fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 15),
@@ -168,14 +192,14 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
                       data: _passDataForQr,
                       version: QrVersions.auto,
                       size: 220.0, // Slightly larger QR code
-                      backgroundColor: Colors.white,
+                      backgroundColor: Colors.white, // QR background remains white for readability
                       eyeStyle: const QrEyeStyle(
                         eyeShape: QrEyeShape.square,
-                        color: Colors.black,
+                        color: Colors.black, // QR eyes remain black
                       ),
                       dataModuleStyle: const QrDataModuleStyle(
                         dataModuleShape: QrDataModuleShape.square,
-                        color: Colors.black,
+                        color: Colors.black, // QR data modules remain black
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -185,19 +209,19 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
                       style: const TextStyle(
                         fontSize: 52, // Larger code text
                         fontWeight: FontWeight.w900,
-                        color: Colors.indigo, // Differentiate color
+                        color: _goldColor, // Gold color
                         letterSpacing: 2.0,
                         fontFamily: 'RobotoMono', // Assuming a monospace font is available
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Valid: $_formattedDate, $_startTime - $_endTime',
+                      'VALID: $_formattedDate, $_startTime - $_endTime',
                       style: const TextStyle(
-                          fontSize: 16, color: Colors.black87),
+                          fontSize: 16, color: Colors.white70), // Lighter white for contrast
                     ),
                     const SizedBox(height: 25),
-                    const Divider(thickness: 1.2),
+                    const Divider(thickness: 1.2, color: _goldColor), // Gold divider
                     const SizedBox(height: 25),
                     Align(
                       alignment: Alignment.centerLeft,
@@ -206,15 +230,18 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Visitor: $_visitorName',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            Text('VISITOR: $_visitorName',
+                                style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: _goldColor)), // Gold color
                             const SizedBox(height: 5),
-                            const Text('Resident: David Johnson',
+                            const Text('RESIDENT: DAVID JOHNSON',
                                 style: TextStyle(
-                                    fontSize: 16, color: Colors.grey)),
-                            const Text('Home: Plot 12, Maple Street',
+                                    fontSize: 16, color: Colors.grey)), // Grey for secondary info
+                            const Text('HOME: PLOT 12, MAPLE STREET',
                                 style: TextStyle(
-                                    fontSize: 16, color: Colors.grey)),
+                                    fontSize: 16, color: Colors.grey)), // Grey for secondary info
                           ],
                         ),
                       ),
@@ -236,26 +263,30 @@ class _VisitorPassScreenState extends State<VisitorPassScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _buildShareButton(
-                    context, FontAwesomeIcons.whatsapp, 'WhatsApp', Colors.green),
+                    context, FontAwesomeIcons.whatsapp, 'WhatsApp', Colors.green), // WhatsApp icon color
                 _buildShareButton(
-                    context, FontAwesomeIcons.solidEnvelope, 'Email', Colors.blue),
+                    context, FontAwesomeIcons.solidEnvelope, 'Email', _goldColor), // Gold icon color
                 _buildShareButton(
-                    context, FontAwesomeIcons.solidCommentDots, 'SMS', Colors.deepPurple),
+                    context, FontAwesomeIcons.solidCommentDots, 'SMS', Colors.deepPurple), // SMS icon color
                 _buildShareButton(
-                    context, Icons.link, 'Copy Link', Colors.blueGrey),
+                    context, Icons.link, 'Copy Link', _darkGoldColor), // Darker gold for contrast
               ],
             ),
             const SizedBox(height: 20),
-            // Done Button
+            // Done button
             SizedBox(
               width: double.infinity, // Full width button
               child: ElevatedButton.icon(
                 onPressed: () => Navigator.pop(context),
                 icon:
-                    const Icon(Icons.check_circle_outline, color: Colors.white),
-                label: const Text('Done', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Icon(Icons.check_circle_outline, color: Colors.black), // Black icon
+                label: const Text('DONE',
+                    style: TextStyle(
+                        color: Colors.black, // Black text
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
+                  backgroundColor: _goldColor, // Gold button background
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
