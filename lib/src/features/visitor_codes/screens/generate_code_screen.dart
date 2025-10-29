@@ -166,14 +166,18 @@ class _GenerateCodeScreenState extends State<GenerateCodeScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
+
+
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
             } else {
               // fallback to ShellScreen if no previous page exists
               Navigator.pushReplacement(
                 context,
+
                 MaterialPageRoute(builder: (_) => const ShellScreen()),
               );
+
             }
           },
         ),
