@@ -179,3 +179,4 @@ Future<List<dynamic>> getVisitHistory({
     }
   }
 }
+ 
