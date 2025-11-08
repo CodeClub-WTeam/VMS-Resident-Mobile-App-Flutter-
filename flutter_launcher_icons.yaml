@@ -1,4 +1,5 @@
+#/home/user/myapp/flutter_launcher_icons.yaml
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: false
+  ios: true
   image_path: "assets/images/logo.png"
