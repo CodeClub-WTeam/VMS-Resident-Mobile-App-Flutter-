@@ -171,9 +171,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ? FileImage(_imageFile!)
                         : (profileImage != null
                             ? NetworkImage(profileImage)
-                            : const AssetImage(
-                                'assets/default_avatar.png')
-                                as ImageProvider),
+                            : null) as ImageProvider?,
+                    child: _imageFile == null && profileImage == null
+                        ? const Icon(Icons.person, size: 50, color: Colors.white)
+                        : null,
                   ),
                   Positioned(
                     bottom: 0,

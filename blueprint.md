@@ -1,88 +1,43 @@
 
-# VMS Resident App Blueprint
+# Project Blueprint
 
 ## Overview
 
-This document outlines the architecture and implementation plan for a Flutter-based mobile application for residents in a Visitor Management System (VMS). The app will allow residents to log in, view their profile, and generate temporary access codes for their visitors.
+This document outlines the structure, design, and features of the VMS Resident App. It serves as a single source of truth for the application's implementation details.
 
-## Project Structure
+## Style, Design, and Features
 
-The project is organized by feature, with a core set of shared components and services.
+### Implemented
 
-```
-lib/
-├── src/
-│   ├── core/
-│   │   ├── api_client.dart
-│   │   ├── error_handler.dart
-│   │   └── constants.dart
-│   ├── features/
-│   │   ├── auth/
-│   │   │   ├── models/
-│   │   │   │   └── resident_model.dart
-│   │   │   ├── repositories/
-│   │   │   │   └── auth_repository.dart
-│   │   │   ├── providers/
-│   │   │   │   └── auth_provider.dart
-│   │   │   └── screens/
-│   │   │       └── login_screen.dart
-│   │   ├── visitor_codes/
-│   │   │   ├── repositories/
-│   │   │   │   └── visitor_code_repository.dart
-│   │   │   ├── providers/
-│   │   │   │   └── code_provider.dart
-│   │   │   └── screens/
-│   │   │       └── generate_code_screen.dart
-│   │   └── home/
-│   │       └── screens/
-│   │           └── home_screen.dart
-│   └── shared/
-│       ├── custom_button.dart
-│       └── loading_indicator.dart
-└── main.dart
-```
+* **Feature-first architecture:** The project is organized by features, such as auth, home, and visitor_codes.
+* **Navigation:** `go_router` is used for declarative routing.
+* **State Management:** `provider` is used for state management.
+* **Dependencies:**
+    * `dio` for network requests.
+    * `flutter_secure_storage` for secure storage.
+    * `google_fonts` for custom fonts.
+    * `intl` for internationalization.
+    * `json_annotation` and `json_serializable` for JSON serialization.
+    * `qr_flutter` for generating QR codes.
+    * `font_awesome_flutter` for icons.
+    * `url_launcher` for launching URLs.
+    * `path_provider` for path management.
+    * `share_plus` for sharing content.
+    * `screenshot` for taking screenshots.
+    * `http` for http requests.
+    * `image_picker` for picking images.
+    * `flutter_native_splash` for splash screen.
 
-## Style and Design
+### Current Task: Theme Refactoring
 
-- **UI Components:** The app will use standard Material Design components.
-- **Styling:** A consistent color scheme and typography will be defined in the `ThemeData`.
-- **Layout:** Screens will be designed to be simple, intuitive, and responsive.
+#### Plan
 
-## Features
-
-- **Authentication:** Residents can log in with their email and password.
-- **Dashboard:** A home screen to welcome the resident and provide access to key features.
-- **Visitor Code Generation:** Residents can generate a temporary access code for a visitor, specifying the visitor's name and the code's expiry date.
-
-## Implementation Plan
-
-1.  **Project Setup:**
-    *   Create a new Flutter project.
-    *   Add necessary dependencies: `provider`, `dio`, `json_serializable`, `build_runner`.
-
-2.  **Core Components:**
-    *   `ApiClient`: A Dio-based client for making API requests.
-    *   `ErrorHandler`: A utility to handle API errors.
-    *   `constants.dart`: To store constant values for the app.
-
-3.  **Shared Widgets:**
-    *   `CustomButton`: A reusable button widget.
-    *   `LoadingIndicator`: A reusable loading indicator widget.
-
-4.  **Authentication Feature:**
-    *   `resident_model.dart`: A data model for the resident.
-    *   `auth_repository.dart`: A repository to handle authentication API calls.
-    *   `auth_provider.dart`: A provider to manage authentication state.
-    *   `login_screen.dart`: A UI for the login form.
-
-5.  **Visitor Code Feature:**
-    *   `visitor_code_repository.dart`: A repository to handle visitor code generation.
-    *   `code_provider.dart`: A provider to manage the state of the generated code.
-    *   `generate_code_screen.dart`: A UI for the code generation form.
-
-6.  **Home Feature:**
-    *   `home_screen.dart`: The main dashboard screen after login.
-
-7.  **Main Application:**
-    *   `main.dart`: The entry point of the application, which sets up providers and routing.
+1.  **Centralize Theme:** Refactor the `main.dart` file to create a centralized `ThemeData` for both light and dark modes.
+    *   Use `ColorScheme.fromSeed` for a consistent color palette.
+    *   Integrate `google_fonts` for typography.
+    *   Use the `provider` package to create a theme provider for switching between light and dark modes.
+2.  **Refactor `history_screen.dart`:** Update the `history_screen.dart` to use the new centralized theme from `Theme.of(context)` instead of hardcoded colors and styles.
+3.  **Future Enhancements:**
+    * Apply the centralized theme to all screens for a consistent look and feel.
+    * Implement a settings screen where users can manually switch between light, dark, and system theme modes.
 
