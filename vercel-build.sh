@@ -19,6 +19,5 @@ flutter pub get
 # Build the web application
 flutter build web
 
-# Move the build output to the public directory
-mkdir -p public
-cp -r build/web/* public/
+# Move the build output to the 'public' directory
+mv build/web public
