@@ -13,6 +13,9 @@ export PATH="/tmp/flutter/bin:$PATH"
 # Enable web support
 flutter config --enable-web
 
+# Clean the project
+flutter clean
+
 # Get dependencies
 flutter pub get
 
